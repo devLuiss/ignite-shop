@@ -57,13 +57,14 @@ export default function Home({products}: HomeProps) {
   );
 }
 
-export const getStaticProps: GetStaticProps = async () => {
-  const response = await stripe.products.list({
-    expand: ["data.default_price"],
-  });
+// COMO A PAGINA HOME É ESTÁTICA E NÃO DINÂMICA, NÃO PRECISA DESSA FUNÇÃO  getStaticPaths PARA GERAR AS ROTAS DINÂMICAS DE CADA PRODUTO NA PAGINA HOME (PAGINA ESTÁTICA)
+export const getStaticProps: GetStaticProps = async () => {// essa função é executada no servidor node, não no browser
+  const response = await stripe.products.list({// listando todos os produtos da stripe (stripe.products.list)
+    expand: ["data.default_price"],// expandindo os dados do preço padrão de cada produto
+  });//
 
-  const products = response.data.map((product) => {
-    const price = product.default_price as Stripe.Price;
+  const products = response.data.map((product) => {// mapeando os produtos para retornar apenas os dados que eu quero
+    const price = product.default_price as Stripe.Price;// pegando o preço padrão de cada produto e convertendo para o tipo Price do stripe
 
     return {
       id: product.id,
@@ -73,13 +74,13 @@ export const getStaticProps: GetStaticProps = async () => {
         style: "currency",
         currency: "BRL",
       }).format(price.unit_amount! / 100),
-    };
+    };// retornando apenas os dados que eu quero de cada produto (id, name, imageUrl, price) e formatando o preço para o formato brasileiro 
   });
 
-  return {
+  return {// retornando os produtos para a pagina home por meio do props (props: {products})
     props: {
       products,
     },
-    revalidate: 60 * 60 * 2, // 2 hours,
+    revalidate: 60 * 60 * 2, // a cada 2h vai ser regerada essa pagina estática durante esse intervalo o usuário consome em cache
   };
 };
