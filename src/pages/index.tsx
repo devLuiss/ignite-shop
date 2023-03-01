@@ -26,7 +26,7 @@ export default function Home({products}: HomeProps) {
       perView: 3,
       spacing: 48,
     },
-  });
+  }); // usando o hook useKeenSlider para criar o slider de produtos na pagina home
 
   return (
     <>
@@ -34,7 +34,7 @@ export default function Home({products}: HomeProps) {
         <title>Home | igShop</title>
       </Head>
       <HomeContainer ref={sliderRef} className="keen-slider">
-        {products.map((product) => {
+        {products.map((product) => {  
           return (
             <Link
               href={`/product/${product.id}`}
@@ -51,7 +51,7 @@ export default function Home({products}: HomeProps) {
               </Product>
             </Link>
           );
-        })}
+        })} {/** mapeando os produtos para retornar o componente Product */}
       </HomeContainer>
     </>
   );
