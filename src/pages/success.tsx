@@ -4,7 +4,11 @@ import Stripe from "stripe";
 import {stripe} from "../lib/stripe";
 import Image from "next/image";
 
-import {ImageContainer, SuccessContainer} from "../styles/pages/success";
+import {
+  ImageContainer,
+  ImagesContainer,
+  SuccessContainer,
+} from "../styles/pages/success";
 import Head from "next/head";
 
 interface SuccessProps {
@@ -13,38 +17,43 @@ interface SuccessProps {
     name: string;
     imageUrl: string;
   };
+  productsImages: string[];
 }
 
-export default function Success({costumerName, product}: SuccessProps) {
+export default function Success({
+  costumerName,
+  product,
+  productsImages,
+}: SuccessProps) {
   return (
     <>
       <Head>
-        <title>Compra efetuada | igShop</title>
-        <meta name="robots" content="noindex" />{" "}
-        {/* ele não permite que a página seja indexada 
-        pelo google 
-        */}
+        <title>Compra efetuada | Ignite Shop</title>
+        <meta name="robots" content="noindex" />
       </Head>
 
       <SuccessContainer>
-        <h1>Compra efetuada</h1>
-        <ImageContainer>
-          <Image src={product.imageUrl} width={120} height={110} alt="" />{" "}
-          {/** ele pega a imagem do produto */}
-        </ImageContainer>
+        <ImagesContainer>
+          {productsImages.map((image, i) => ( // aqui eu criei um map para percorrer as imagens dos produtos comprados e retornar para a página success
+            <ImageContainer key={i}>
+              <Image src={image} width={120} height={110} alt="" />
+            </ImageContainer>
+          ))}
+        </ImagesContainer>
+
+        <h1>Compra efetuada!</h1>
+
         <p>
-          Uhuul <strong>{costumerName}</strong>, sua{" "}
-          <strong>{product.name}</strong> já está a caminho da sua casa.{" "}
-          {/** ele pega o nome do cliente e o nome do produto */}
+          Uhuul <strong>{costumerName}</strong>, sua compra de{" "}
+          {productsImages.length} camisetas já está a caminho da sua casa.
         </p>
-        <Link href="/">Voltar ao catálogo</Link>{" "}
-        {/* ele redireciona para a home */}
+
+        <Link href="/">Voltar ao catálogo</Link>
       </SuccessContainer>
     </>
   );
 }
-
-export const getServerSideProps: GetServerSideProps = async ({query}) => {
+export const getServerSideProps: GetServerSideProps = async ({query}) => { // aqui eu criei a função getServerSideProps para pegar os dados da sessão do stripe e retornar para a página success
   if (!query.session_id) {
     return {
       redirect: {
@@ -61,16 +70,16 @@ export const getServerSideProps: GetServerSideProps = async ({query}) => {
     expand: ["line_items", "line_items.data.price.product"], // ele pega os dados do produto
   }); //
 
-  const costumerName = session.customer_details.name; // ele pega o nome do cliente
-  const product = session.line_items.data[0].price.product as Stripe.Product; // ele pega os dados do produto
+  const customerName = session.customer_details.name; // aqui ele pega o nome do cliente na sessão do stripe e retorna para a página success
+  const productsImages = session.line_items.data.map((item) => {
+    const product = item.price.product as Stripe.Product;
+    return product.images[0];
+  }); // aqui ele pega o nome do cliente e as imagens dos produtos comprados na sessão do stripe e retorna para a página success
 
   return {
     props: {
-      costumerName,
-      product: {
-        name: product.name,
-        imageUrl: product.images[0],
-      },
+      customerName,
+      productsImages,
     },
-  }; // ele retorna os dados do produto e do cliente por props
+  };// aqui ele retorna os dados do cliente e das imagens dos produtos
 };

@@ -52,6 +52,11 @@ export const Product = styled("div", {
       fontWeight: "bold",
       color: "$green300",
     },
+    div: {
+      display: "flex",
+      flexDirection: "column",
+      gap: "0.5rem",
+    },
   },
 
   "&:hover": {

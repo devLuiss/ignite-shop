@@ -11,47 +11,27 @@ import {useRouter} from "next/router";
 import axios from "axios";
 import {useState} from "react";
 import Head from "next/head";
+import {useCartContext} from "./../../hooks/useCartContext";
+import {IProduct} from "./../../contexts/CartContext";
 
 interface ProductProps {
-  product: {
-    id: string;
-    name: string;
-    imageUrl: string;
-    price: string;
-    description: string;
-    defaultPriceId: string;
-  };
+  product: IProduct;
 }
 
 export default function Product({product}: ProductProps) {
-  const [isCreatingCheckoutSession, setIsCreatingCheckoutSession] =
-    useState(false);// variável para mostrar o botão de comprar enquanto a sessão de checkout não é criada
-
-  async function handleBuyProduct() { // função para criar a sessão de checkout no stripe e redirecionar para a pagina de checkout
-    try {
-      setIsCreatingCheckoutSession(true);
-      const response = await axios.post("/api/checkout", {
-        priceId: product.defaultPriceId,
-      });
-
-      const {checkoutUrl} = response.data;
-
-      window.location.href = checkoutUrl;
-    } catch (err) {
-      alert(err.message);
-    }
-  }
-
-  const {isFallback} = useRouter();// se o fallback for true, ele vai mostrar a mensagem de carregando enquanto gera a pagina estática
-
+  const {isFallback} = useRouter(); // se o fallback for true, ele vai mostrar a mensagem de carregando enquanto gera a pagina estática
   if (isFallback) {
     return <p>Carregando...</p>;
   } // se o fallback for true, ele vai mostrar a mensagem de carregando enquanto gera a pagina estática
 
+  const {addToCart, checkIfItemAlreadyExistsInCart} = useCartContext(); // usando o hook personalizado useCartContext para adicionar o produto no carrinho de compras através da função addToCart
+
+  const itemAlreadyExistsInCart = checkIfItemAlreadyExistsInCart(product); // usando o hook personalizado useCartContext para adicionar o produto no carrinho de compras através da função addToCart
+
   return (
     <>
       <Head>
-        <title>{product.name} | igShop</title>
+        <title>{product.name}</title>
       </Head>
       <ProductContainer>
         <ImageContainer>
@@ -63,10 +43,10 @@ export default function Product({product}: ProductProps) {
 
           <p>{product.description}</p>
           <button
-            disabled={isCreatingCheckoutSession}
-            onClick={handleBuyProduct}
+            disabled={itemAlreadyExistsInCart}
+            onClick={(e) => addToCart(product)}
           >
-            Comprar
+            {itemAlreadyExistsInCart ? "Produto ja esta no carrinho" : "Comprar"}
           </button>
         </ProductDetails>
       </ProductContainer>
@@ -78,7 +58,7 @@ export default function Product({product}: ProductProps) {
 export const getStaticPaths: GetStaticPaths = async () => {
   return {
     paths: [
-      {params: {id: "prod_JZ2Z2Z2Z2Z2Z2Z"} }, // geralmente coloca aqui os id dos posts ou produtos mais acessados para carregarem mais rápidos
+      {params: {id: "prod_JZ2Z2Z2Z2Z2Z2Z"}}, // geralmente coloca aqui os id dos posts ou produtos mais acessados para carregarem mais rápidos
     ],
     fallback: true, // true: se o id nao estiver na lista, ele vai gerar a pagina estática na hora que o usuário acessar
   };
@@ -105,8 +85,10 @@ export const getStaticProps: GetStaticProps<any, {id: string}> = async ({
           style: "currency",
           currency: "BRL",
         }).format(price.unit_amount / 100),
+        numberPrice: price.unit_amount / 100,
         description: product.description,
         defaultPriceId: price.id,
+
       },
     }, // vai ser passado para o componente como props
     revalidate: 60 * 60 * 1, // a cada 1 hora vai ser regerada essa pagina estática durante esse intervalo o usuário consome em cache

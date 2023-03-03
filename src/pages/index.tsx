@@ -10,14 +10,12 @@ import {HomeContainer, Product} from "../styles/pages/home";
 import "keen-slider/keen-slider.min.css";
 import Stripe from "stripe";
 import Image from "next/image";
+import {CartButton} from "../components/CartButton";
+import {useCartContext} from "../hooks/useCartContext";
+import {IProduct} from "../contexts/CartContext";
 
 interface HomeProps {
-  products: {
-    id: string;
-    name: string;
-    imageUrl: string;
-    price: string;
-  }[];
+  products: IProduct[];
 }
 
 export default function Home({products}: HomeProps) {
@@ -28,13 +26,24 @@ export default function Home({products}: HomeProps) {
     },
   }); // usando o hook useKeenSlider para criar o slider de produtos na pagina home
 
+  const {addToCart,checkIfItemAlreadyExistsInCart} = useCartContext(); // usando o hook personalizado useCartContext para adicionar o produto no carrinho de compras através da função addToCart
+
+  function handleAddToCart(
+    e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
+    product: IProduct
+  ) {
+    e.preventDefault();
+    addToCart(product);
+    console.log(product);
+  } // aqui eu criei a função para adicionar o produto no carrinho de compras
+
   return (
     <>
       <Head>
         <title>Home | igShop</title>
       </Head>
       <HomeContainer ref={sliderRef} className="keen-slider">
-        {products.map((product) => {  
+        {products.map((product) => {
           return (
             <Link
               href={`/product/${product.id}`}
@@ -45,13 +54,24 @@ export default function Home({products}: HomeProps) {
                 <Image src={product.imageUrl} width={520} height={480} alt="" />
 
                 <footer>
-                  <strong>{product.name}</strong>
-                  <span>{product.price}</span>
+                  <div>
+                    <strong>{product.name}</strong>
+                    <span>{product.price}</span>
+                  </div>
+                  <div>
+                    <CartButton
+                      disabled={checkIfItemAlreadyExistsInCart(product)}
+                      color={"green"}
+                      size={"large"}
+                      onClick={(e) => handleAddToCart(e, product)}
+                    />
+                  </div>
                 </footer>
               </Product>
             </Link>
           );
-        })} {/** mapeando os produtos para retornar o componente Product */}
+        })}{" "}
+        {/** mapeando os produtos para retornar o componente Product */}
       </HomeContainer>
     </>
   );
@@ -74,6 +94,8 @@ export const getStaticProps: GetStaticProps = async () => {// essa função é e
         style: "currency",
         currency: "BRL",
       }).format(price.unit_amount! / 100),
+      numberPrice: price.unit_amount / 100,
+      defaultPriceId: price.id,
     };// retornando apenas os dados que eu quero de cada produto (id, name, imageUrl, price) e formatando o preço para o formato brasileiro 
   });
 
